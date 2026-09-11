@@ -19,7 +19,12 @@ class Venda:
             self.valor_total = float(valor_total)
 
     def calcular_total(self):
-        pass
+        total = 0
+
+        for item in self.itens:
+            total += item["quantidade"] * item["preco_unitario"]
+
+        return total
 
     def itens_para_texto(self):
         partes = []
