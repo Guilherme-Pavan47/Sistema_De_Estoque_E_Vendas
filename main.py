@@ -64,10 +64,11 @@ def listar_vendas(vendas, s):
 
     for v in vendas:
         c = s.clientes.buscar(v.codigo_cliente)
-        cliente = (
-            f"{c.nome} (codigo {c.codigo})"
-            if c else f"Cliente removido (codigo {v.codigo_cliente})"
-        )
+
+        if c:
+            cliente = f"{c.nome} (codigo {c.codigo})"
+        else:
+            cliente = f"Cliente removido (codigo {v.codigo_cliente})"
 
         print(
             f"Venda {v.codigo} | Cliente: {cliente} | "
@@ -89,10 +90,11 @@ def listar_vendas(vendas, s):
 
 def detalhes_venda(v, s):
     c = s.clientes.buscar(v.codigo_cliente)
-    cliente = (
-        f"{c.nome} (codigo {c.codigo})"
-        if c else f"Cliente removido (codigo {v.codigo_cliente})"
-    )
+
+    if c:
+        cliente = f"{c.nome} (codigo {c.codigo})"
+    else:
+        cliente = f"Cliente removido (codigo {v.codigo_cliente})"
 
     print(f"Codigo da venda: {v.codigo}")
     print(f"Cliente: {cliente}")
@@ -115,9 +117,9 @@ def detalhes_venda(v, s):
 
 def menu():
     print("""
-====================================
-     SISTEMA DE ESTOQUE E VENDAS
-====================================
+==============================
+     SISTEMA DE ESTOQUE
+==============================
 1  - Cadastrar cliente
 2  - Listar clientes
 3  - Buscar cliente
@@ -188,6 +190,7 @@ def executar(op, s):
         p = s.buscar_produto(codigo)
         antiga = p.quantidade
         nova = inteiro("Nova quantidade em estoque: ")
+
         p = s.atualizar_estoque(codigo, nova)
 
         print("\nESTOQUE ATUALIZADO")
@@ -204,14 +207,19 @@ def executar(op, s):
         print(f"Valor em estoque: R$ {p.preco * p.quantidade:.2f}")
 
     elif op == 9:
-        p = s.remover_produto(inteiro("Codigo do produto a remover: "))
+        p = s.remover_produto(
+            inteiro("Codigo do produto a remover: ")
+        )
 
         print("\nPRODUTO REMOVIDO")
         print(f"Nome: {p.nome}")
         print(f"Codigo: {p.codigo}")
         print(f"Quantidade removida: {p.quantidade}")
         print(f"Preco: R$ {p.preco:.2f}")
-        print(f"Valor retirado do estoque: R$ {p.preco * p.quantidade:.2f}")
+        print(
+            f"Valor retirado do estoque: "
+            f"R$ {p.preco * p.quantidade:.2f}"
+        )
         print("Estoque restante: 0")
 
     elif op == 10:
@@ -223,7 +231,9 @@ def executar(op, s):
         listar_produtos(s.listar_produtos_ordenados_por_id())
 
     elif op == 12:
-        p = s.buscar_produto_binario(inteiro("Codigo do produto: "))
+        p = s.buscar_produto_binario(
+            inteiro("Codigo do produto: ")
+        )
         print("\nPRODUTO ENCONTRADO PELA BUSCA BINARIA")
         produto_info(p)
 
@@ -235,7 +245,10 @@ def executar(op, s):
         c = s.buscar_cliente(cliente)
         p = s.buscar_produto(produto)
         estoque = p.quantidade
-        v = s.realizar_venda_exemplo(cliente, produto, qtd)
+
+        v = s.realizar_venda_exemplo(
+            cliente, produto, qtd
+        )
 
         print("\nVENDA REALIZADA")
         print(f"Codigo da venda: {v.codigo}")
@@ -292,75 +305,98 @@ def executar(op, s):
         resultado = s.produto_mais_vendido()
 
         if resultado is None:
-            print("Nenhuma venda registrada.")
+            print("Nenhum produto com vendas registrado.")
         else:
-            p, qtd = resultado
-            print(f"Nome: {p.nome}")
-            print(f"Codigo: {p.codigo}")
-            print(f"Preco: R$ {p.preco:.2f}")
-            print(f"Quantidade vendida: {qtd}")
-            print(f"Estoque atual: {p.quantidade}")
-            print(f"Valor em estoque: R$ {p.preco * p.quantidade:.2f}")
+            print(f"Nome: {resultado['nome']}")
+            print(f"Codigo: {resultado['codigo']}")
+            print(f"Preco: R$ {resultado['preco']:.2f}")
+            print(f"Quantidade vendida: {resultado['quantidade']}")
+            print(f"Estoque atual: {resultado['estoque']}")
+            print(
+                f"Valor em estoque: "
+                f"R$ {resultado['preco'] * resultado['estoque']:.2f}"
+            )
 
     elif op == 21:
-        op = s.desfazer_ultima_operacao()
+        operacao = s.desfazer_ultima_operacao()
 
         print("\nULTIMA OPERACAO DESFEITA")
 
-        if op["acao"] == "remover_produto":
-            p = op["produto"]
-            print("Acao: remocao de produto")
+        if operacao["acao"] == "remover_produto":
+            p = operacao["produto"]
+
+            print("Acao: remocao de produto desfeita")
             print(f"Nome: {p.nome}")
             print(f"Codigo: {p.codigo}")
             print(f"Quantidade restaurada: {p.quantidade}")
             print(f"Preco: R$ {p.preco:.2f}")
-            print(f"Valor restaurado: R$ {p.preco * p.quantidade:.2f}")
+            print(
+                f"Valor restaurado: "
+                f"R$ {p.preco * p.quantidade:.2f}"
+            )
             print(f"Estoque atual: {p.quantidade}")
 
-        elif op["acao"] == "cadastrar_produto":
-            p = op["produto"]
+        elif operacao["acao"] == "cadastrar_produto":
+            p = operacao["produto"]
+
             print("Acao: cadastro de produto desfeito")
             print(f"Nome: {p.nome}")
             print(f"Codigo: {p.codigo}")
             print(f"Quantidade retirada: {p.quantidade}")
             print("Estoque atual: 0")
 
-        elif op["acao"] == "remover_cliente":
-            c = op["cliente"]
+        elif operacao["acao"] == "remover_cliente":
+            c = operacao["cliente"]
+
             print("Acao: remocao de cliente desfeita")
             cliente_info(c)
             print("Cliente restaurado no cadastro.")
 
-        elif op["acao"] == "cadastrar_cliente":
-            c = op["cliente"]
+        elif operacao["acao"] == "cadastrar_cliente":
+            c = operacao["cliente"]
+
             print("Acao: cadastro de cliente desfeito")
             cliente_info(c)
             print("Cliente retirado do cadastro.")
 
-        elif op["acao"] == "atualizar_estoque":
-            p = s.buscar_produto(op["codigo"])
+        elif operacao["acao"] == "atualizar_estoque":
+            p = s.buscar_produto(operacao["codigo"])
+
             print("Acao: atualizacao de estoque desfeita")
             print(f"Produto: {p.nome}")
             print(f"Codigo: {p.codigo}")
             print(f"Estoque restaurado: {p.quantidade}")
             print(f"Preco: R$ {p.preco:.2f}")
-            print(f"Valor em estoque: R$ {p.preco * p.quantidade:.2f}")
+            print(
+                f"Valor em estoque: "
+                f"R$ {p.preco * p.quantidade:.2f}"
+            )
 
-        elif op["acao"] == "realizar_venda":
-            v = op["venda"]
+        elif operacao["acao"] == "realizar_venda":
+            v = operacao["venda"]
+
             print("Acao: venda desfeita")
             print(f"Codigo da venda: {v.codigo}")
             print(
-                f"Cliente: {op['nome_cliente']} "
-                f"(codigo {op['codigo_cliente']})"
+                f"Cliente: {operacao['nome_cliente']} "
+                f"(codigo {operacao['codigo_cliente']})"
             )
             print(
-                f"Produto: {op['nome_produto']} "
-                f"(codigo {op['codigo_produto']})"
+                f"Produto: {operacao['nome_produto']} "
+                f"(codigo {operacao['codigo_produto']})"
             )
-            print(f"Quantidade devolvida: {op['quantidade']}")
-            print(f"Estoque restaurado: {op['estoque_anterior']}")
-            print(f"Valor da venda: R$ {v.valor_total:.2f}")
+            print(
+                f"Quantidade devolvida: "
+                f"{operacao['quantidade']}"
+            )
+            print(
+                f"Estoque restaurado: "
+                f"{operacao['estoque_anterior']}"
+            )
+            print(
+                f"Valor da venda: "
+                f"R$ {v.valor_total:.2f}"
+            )
 
     else:
         print("Opcao invalida.")

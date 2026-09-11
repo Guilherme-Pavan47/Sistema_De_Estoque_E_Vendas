@@ -19,6 +19,7 @@ class EstoqueService:
 
     def __init__(self):
         raiz = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
         self.persistencia = PersistenciaService(
             os.path.join(raiz, "data")
         )
@@ -41,12 +42,18 @@ class EstoqueService:
             self.vendas.enqueue(v)
 
     def proximo_codigo(self, lista):
-        return max((x.codigo for x in lista), default=0) + 1
+        return max(
+            (x.codigo for x in lista),
+            default=0
+        ) + 1
 
-    # CLIENTES
 
     def cadastrar_cliente(self, nome):
-        c = Cliente(self.proximo_codigo(self.clientes.listar()), nome)
+        c = Cliente(
+            self.proximo_codigo(self.clientes.listar()),
+            nome
+        )
+
         self.clientes.inserir_fim(c)
 
         self.historico.push({
@@ -86,7 +93,6 @@ class EstoqueService:
         self.salvar_clientes()
         return c
 
-    # PRODUTOS
 
     def cadastrar_produto(self, nome, preco, quantidade):
         p = Produto(
@@ -132,7 +138,10 @@ class EstoqueService:
             self.produtos.listar()
         )
 
-        p = buscar_produto_por_id(produtos, codigo)
+        p = buscar_produto_por_id(
+            produtos,
+            codigo
+        )
 
         if p is None:
             raise ValueError(
@@ -172,10 +181,11 @@ class EstoqueService:
         self.salvar_produtos()
         return p
 
-    # VENDAS
 
     def gerar_codigo_venda(self):
-        return self.proximo_codigo(self.vendas.listar())
+        return self.proximo_codigo(
+            self.vendas.listar()
+        )
 
     def realizar_venda_exemplo(
         self,
@@ -193,11 +203,12 @@ class EstoqueService:
 
         if produto.quantidade < quantidade:
             raise ValueError(
-                f"Estoque insuficiente. Estoque atual: "
-                f"{produto.quantidade}."
+                f"Estoque insuficiente. "
+                f"Estoque atual: {produto.quantidade}."
             )
 
         estoque_anterior = produto.quantidade
+
         produto.atualizar_estoque(
             produto.quantidade - quantidade
         )
@@ -236,7 +247,6 @@ class EstoqueService:
     def primeira_venda(self):
         return self.vendas.front()
 
-    # RELATORIOS
 
     def valor_total_estoque(self):
         return sum(
@@ -259,6 +269,7 @@ class EstoqueService:
                 for v in self.vendas.listar()
                 if v.codigo_cliente == c.codigo
             )
+
             resultado.append((c, total))
 
         return resultado
@@ -266,31 +277,60 @@ class EstoqueService:
     def cliente_que_mais_gastou(self):
         dados = self.clientes_e_valores_totais_gastos()
 
-        return max(dados, key=lambda x: x[1]) if dados else None
-
-    def produto_mais_vendido(self):
-        quantidades = {}
-
-        for v in self.vendas.listar():
-            for item in v.itens:
-                codigo = item["codigo_produto"]
-                quantidades[codigo] = (
-                    quantidades.get(codigo, 0)
-                    + item["quantidade"]
-                )
-
-        if not quantidades:
+        if not dados:
             return None
 
-        codigo = max(quantidades, key=quantidades.get)
-        produto = self.produtos.buscar(codigo)
-
-        return (
-            (produto, quantidades[codigo])
-            if produto else None
+        return max(
+            dados,
+            key=lambda x: x[1]
         )
 
-    # DESFAZER
+    def produto_mais_vendido(self):
+        vendas = self.vendas.listar()
+
+        if not vendas:
+            return None
+
+        produtos_vendidos = {}
+
+        for venda in vendas:
+            for item in venda.itens:
+                codigo = item["codigo_produto"]
+
+                produto = self.produtos.buscar(codigo)
+
+                if produto is None:
+                    continue
+
+                if codigo not in produtos_vendidos:
+                    produtos_vendidos[codigo] = {
+                        "produto": produto,
+                        "quantidade": 0
+                    }
+
+                produtos_vendidos[codigo]["quantidade"] += (
+                    item["quantidade"]
+                )
+
+        if not produtos_vendidos:
+            return None
+
+        codigo = max(
+            produtos_vendidos,
+            key=lambda x: produtos_vendidos[x]["quantidade"]
+        )
+
+        dados = produtos_vendidos[codigo]
+        produto = dados["produto"]
+
+        return {
+            "nome": produto.nome,
+            "codigo": produto.codigo,
+            "preco": produto.preco,
+            "quantidade": dados["quantidade"],
+            "estoque": produto.quantidade
+        }
+
 
     def desfazer_ultima_operacao(self):
         if self.historico.is_empty():
@@ -302,23 +342,33 @@ class EstoqueService:
         acao = op["acao"]
 
         if acao == "cadastrar_cliente":
-            self.clientes.remover(op["cliente"].codigo)
+            self.clientes.remover(
+                op["cliente"].codigo
+            )
             self.salvar_clientes()
 
         elif acao == "remover_cliente":
-            self.clientes.inserir_fim(op["cliente"])
+            self.clientes.inserir_fim(
+                op["cliente"]
+            )
             self.salvar_clientes()
 
         elif acao == "cadastrar_produto":
-            self.produtos.remover(op["produto"].codigo)
+            self.produtos.remover(
+                op["produto"].codigo
+            )
             self.salvar_produtos()
 
         elif acao == "remover_produto":
-            self.produtos.inserir_fim(op["produto"])
+            self.produtos.inserir_fim(
+                op["produto"]
+            )
             self.salvar_produtos()
 
         elif acao == "atualizar_estoque":
-            p = self.produtos.buscar(op["codigo"])
+            p = self.produtos.buscar(
+                op["codigo"]
+            )
 
             if p:
                 p.atualizar_estoque(
@@ -329,12 +379,13 @@ class EstoqueService:
 
         elif acao == "realizar_venda":
             venda = op["venda"]
+            fila = Fila()
 
-            self.vendas = Fila()
-
-            for v in self.persistencia.carregar_vendas():
+            for v in self.vendas.listar():
                 if v.codigo != venda.codigo:
-                    self.vendas.enqueue(v)
+                    fila.enqueue(v)
+
+            self.vendas = fila
 
             p = self.produtos.buscar(
                 op["codigo_produto"]
@@ -350,7 +401,6 @@ class EstoqueService:
 
         return op
 
-    # PERSISTENCIA
 
     def salvar_clientes(self):
         self.persistencia.salvar_clientes(
