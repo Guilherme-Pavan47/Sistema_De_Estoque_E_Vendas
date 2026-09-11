@@ -115,9 +115,9 @@ def detalhes_venda(v, s):
 
 def menu():
     print("""
-==============================
-     SISTEMA DE ESTOQUE
-==============================
+====================================
+     SISTEMA DE ESTOQUE E VENDAS
+====================================
 1  - Cadastrar cliente
 2  - Listar clientes
 3  - Buscar cliente
