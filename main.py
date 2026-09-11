@@ -110,7 +110,7 @@ def executar_opcao(opcao, service):
 
     elif opcao == 21:
         pass
-        pass
+    
 
     else:
         print("Opcao invalida. Tente novamente.")
