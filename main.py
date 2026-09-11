@@ -1,143 +1,187 @@
 from services.estoque_service import EstoqueService
 
-def ler_inteiro(mensagem):
-    valor = input(mensagem)
-    return int(valor)
 
-def ler_float(mensagem):
-    valor = input(mensagem).replace(",", ".")
-    return float(valor)
 
-def pausar():
+
+def inteiro(msg):
+    while True:
+        try:
+            return int(input(msg))
+        except ValueError:
+            print("Digite um numero inteiro valido.")
+
+
+
+
+def decimal(msg):
+    while True:
+        try:
+            return float(input(msg).replace(",", "."))
+        except ValueError:
+            print("Digite um valor valido.")
+
+
+
+
+def pausa():
     input("\nPressione ENTER para continuar...")
 
-def imprimir_registros(registros, mensagem_vazia):
-    if len(registros) == 0:
-        print(mensagem_vazia)
+
+
+
+def produto_info(p):
+    print(f"Nome: {p.nome}")
+    print(f"Codigo: {p.codigo}")
+    print(f"Preco: R$ {p.preco:.2f}")
+    print(f"Quantidade em estoque: {p.quantidade}")
+    print(f"Valor em estoque: R$ {p.preco * p.quantidade:.2f}")
+
+
+
+
+def cliente_info(c):
+    print(f"Nome: {c.nome}")
+    print(f"Codigo: {c.codigo}")
+
+
+
+
+def listar_produtos(lista):
+    if not lista:
+        print("Nenhum produto cadastrado.")
         return
 
-    for registro in registros:
-        print(registro)
 
-def mostrar_menu():
-    print("\n==============================")
-    print("SISTEMA DE ESTOQUE E VENDAS")
-    print("==============================")
-    print("1 - Cadastrar cliente")
-    print("2 - Listar clientes")
-    print("3 - Buscar cliente")
-    print("4 - Remover cliente")
-    print("5 - Cadastrar produto")
-    print("6 - Listar produtos")
-    print("7 - Buscar produto")
-    print("8 - Atualizar estoque")
-    print("9 - Remover produto")
-    print("10 - Listar produtos em ordem inversa")
-    print("11 - Listar produtos ordenados por ID")
-    print("12 - Buscar produto por ID usando Busca Binaria")
-    print("13 - Realizar venda simples de exemplo")
-    print("14 - Visualizar fila de vendas")
-    print("15 - Visualizar primeira venda da fila")
-    print("16 - Exibir valor total do estoque")
-    print("17 - Exibir valor total das vendas")
-    print("18 - Exibir clientes e valores totais gastos")
-    print("19 - Exibir cliente que mais gastou")
-    print("20 - Exibir produto mais vendido")
-    print("21 - Desfazer ultima operacao")
-    print("0 - Sair")
+    for p in lista:
+        print(
+            f"Codigo {p.codigo} | {p.nome} | "
+            f"Preco: R$ {p.preco:.2f} | "
+            f"Estoque: {p.quantidade} | "
+            f"Valor: R$ {p.preco * p.quantidade:.2f}"
+        )
 
 
-def executar_opcao(opcao, service):
-    if opcao == 1:
-        pass
 
-    elif opcao == 2:
-        pass
 
-    elif opcao == 3:
-        pass
+def listar_clientes(lista):
+    if not lista:
+        print("Nenhum cliente cadastrado.")
+        return
 
-    elif opcao == 4:
-        pass
 
-    elif opcao == 5:
-        pass
+    for c in lista:
+        print(f"Codigo {c.codigo} | Nome: {c.nome}")
 
-    elif opcao == 6:
-        pass
 
-    elif opcao == 7:
-        pass
 
-    elif opcao == 8:
-        pass
 
-    elif opcao == 9:
-        pass
+def listar_vendas(lista, service):
+    if not lista:
+        print("Nenhuma venda registrada.")
+        return
 
-    elif opcao == 10:
-        pass
 
-    elif opcao == 11:
-        pass
+    for v in lista:
+        c = service.clientes.buscar(v.codigo_cliente)
 
-    elif opcao == 12:
-        pass
 
-    elif opcao == 13:
-        pass
+        if c:
+            cliente = f"{c.nome} (codigo {c.codigo})"
+        else:
+            cliente = (
+                f"Cliente removido "
+                f"(codigo {v.codigo_cliente})"
+            )
 
-    elif opcao == 14:
-        pass
 
-    elif opcao == 15:
-        pass
+        print(
+            f"Venda {v.codigo} | "
+            f"Cliente: {cliente} | "
+            f"Total: R$ {v.valor_total:.2f}"
+        )
 
-    elif opcao == 16:
-        pass
 
-    elif opcao == 17:
-        pass
+        for item in v.itens:
+            p = service.produtos.buscar(
+                item["codigo_produto"]
+            )
 
-    elif opcao == 18:
-        pass
 
-    elif opcao == 19:
-        pass
+            if p:
+                nome = p.nome
+            else:
+                nome = "Produto removido"
 
-    elif opcao == 20:
-        pass
 
-    elif opcao == 21:
-        pass
-    
+            subtotal = (
+                item["quantidade"] *
+                item["preco_unitario"]
+            )
 
-    else:
-        print("Opcao invalida. Tente novamente.")
 
-def main():
-    service = EstoqueService()
+            print(
+                f"   -> {nome} "
+                f"(codigo {item['codigo_produto']}) | "
+                f"Quantidade: {item['quantidade']} | "
+                f"Subtotal: R$ {subtotal:.2f}"
+            )
 
-    while True:
-        mostrar_menu()
 
-        try:
-            opcao = ler_inteiro("Escolha uma opcao: ")
 
-            if opcao == 0:
-                print("Sistema encerrado.")
-                break
 
-            executar_opcao(opcao, service)
+def detalhes_venda(v, service):
+    c = service.buscar_cliente(v.codigo_cliente)
 
-        except ValueError as erro:
-            print(f"Erro: {erro}")
-        except IndexError as erro:
-            print(f"Erro: {erro}")
-        except NotImplementedError as erro:
-            print(f"Funcionalidade para completar: {erro}")
 
-        pausar()
+    print(f"Codigo da venda: {v.codigo}")
+    print(f"Cliente: {c.nome} (codigo {c.codigo})")
+    print("Itens:")
 
-if __name__ == "__main__":
-    main()
+
+    for item in v.itens:
+        p = service.produtos.buscar(item["codigo_produto"])
+        nome = p.nome if p else "Produto removido"
+
+
+        print(
+            f"  {nome} (codigo {item['codigo_produto']}) | "
+            f"Quantidade: {item['quantidade']} | "
+            f"Preco: R$ {item['preco_unitario']:.2f} | "
+            f"Subtotal: R$ "
+            f"{item['quantidade'] * item['preco_unitario']:.2f}"
+        )
+
+
+    print(f"Total da venda: R$ {v.valor_total:.2f}")
+
+
+
+
+def menu():
+    print("""
+==============================
+     SISTEMA DE ESTOQUE
+==============================
+1  - Cadastrar cliente
+2  - Listar clientes
+3  - Buscar cliente
+4  - Remover cliente
+5  - Cadastrar produto
+6  - Listar produtos
+7  - Buscar produto
+8  - Atualizar estoque
+9  - Remover produto
+10 - Listar produtos em ordem inversa
+11 - Listar produtos ordenados por ID
+12 - Buscar produto por ID usando Busca Binaria
+13 - Realizar venda simples de exemplo
+14 - Visualizar fila de vendas
+15 - Visualizar primeira venda da fila
+16 - Exibir valor total do estoque
+17 - Exibir valor total das vendas
+18 - Exibir clientes e valores totais gastos
+19 - Exibir cliente que mais gastou
+20 - Exibir produto mais vendido
+21 - Desfazer ultima operacao
+0  - Sair
+==============================""")
